@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "./firebase/config";
@@ -18,17 +18,19 @@ import TopTabs from "./components/TopTabs.jsx";
 const TITLES = { calendar: "Calendar", tasks: "Tasks", profile: "Profile" };
 
 export default function App() {
-  const [user, setUser] = useState(undefined); 
+  const [user, setUser] = useState(undefined);
   const [profile, setProfile] = useState(null);
   const [view, setView] = useState("calendar");
   const [menuOpen, setMenuOpen] = useState(false);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState("");
   const today = useToday();
+  const registering = useRef(false);
 
   useEffect(
     () =>
       onAuthStateChanged(auth, (u) => {
+        if (registering.current) return;
         setUser(u);
         if (!u) {
           setProfile(null);
@@ -37,13 +39,13 @@ export default function App() {
           setModal(null);
         }
       }),
-    []
+    [],
   );
 
   useEffect(() => {
     if (!user) return;
     return onSnapshot(doc(db, "users", user.uid), (snap) =>
-      setProfile(snap.exists() ? snap.data() : null)
+      setProfile(snap.exists() ? snap.data() : null),
     );
   }, [user]);
 
@@ -53,16 +55,25 @@ export default function App() {
     return () => clearTimeout(id);
   }, [toast]);
 
-  const { tasks: rawTasks, loading, error, addTask, updateTask, removeTask, removeMany, toggleDone } =
-    useTasks(user?.uid);
+  const {
+    tasks: rawTasks,
+    loading,
+    error,
+    addTask,
+    updateTask,
+    removeTask,
+    removeMany,
+    toggleDone,
+  } = useTasks(user?.uid);
 
   const tasks = useMemo(
     () => rawTasks.map((t) => ({ ...t, status: getStatus(t, today) })),
-    [rawTasks, today]
+    [rawTasks, today],
   );
 
-  if (user === undefined) return <div className="loading-screen">Loading...</div>;
-  if (!user) return <AuthScreen />;
+  if (user === undefined)
+    return <div className="loading-screen">Loading...</div>;
+  if (!user) return <AuthScreen registering={registering} />;
 
   const name = profile?.fullName || user.displayName || user.email;
 
@@ -80,7 +91,7 @@ export default function App() {
     setModal(null);
     run(
       () => (editing ? updateTask(editing.id, data) : addTask(data)),
-      editing ? "Task updated." : "Task added."
+      editing ? "Task updated." : "Task added.",
     );
   }
 
@@ -96,7 +107,10 @@ export default function App() {
       ? `Delete all ${ids.length} task${ids.length === 1 ? "" : "s"}? This can't be undone.`
       : `Delete ${ids.length} selected task${ids.length === 1 ? "" : "s"}? This can't be undone.`;
     if (!window.confirm(msg)) return false;
-    run(() => removeMany(ids), `${ids.length} task${ids.length === 1 ? "" : "s"} deleted.`);
+    run(
+      () => removeMany(ids),
+      `${ids.length} task${ids.length === 1 ? "" : "s"} deleted.`,
+    );
     return true;
   }
 
@@ -129,7 +143,11 @@ export default function App() {
 
       <div className="main">
         <header className="topbar">
-          <button className="icon-btn light menu-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <button
+            className="icon-btn light menu-btn"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Open menu"
+          >
             ☰
           </button>
           <h1>{TITLES[view]}</h1>
@@ -145,7 +163,12 @@ export default function App() {
               </p>
             )}
             {view === "profile" ? (
-              <ProfilePage user={user} profile={profile} onSaved={setToast} onError={setToast} />
+              <ProfilePage
+                user={user}
+                profile={profile}
+                onSaved={setToast}
+                onError={setToast}
+              />
             ) : loading ? (
               <p className="empty">Loading your tasks...</p>
             ) : view === "calendar" ? (
@@ -159,8 +182,18 @@ export default function App() {
         <BottomNav view={view} onChange={go} />
       </div>
 
-      {modal && <TaskModal modal={modal} onSave={saveTask} onClose={() => setModal(null)} />}
-      {toast && <div className="toast" role="status">{toast}</div>}
+      {modal && (
+        <TaskModal
+          modal={modal}
+          onSave={saveTask}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {toast && (
+        <div className="toast" role="status">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
