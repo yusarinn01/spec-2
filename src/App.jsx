@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { onValue, ref } from "firebase/database";
 import { auth, db } from "./firebase/config";
 import { getStatus } from "./utils/tasks";
 import { formatLong } from "./utils/dates";
@@ -44,8 +44,8 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    return onSnapshot(doc(db, "users", user.uid), (snap) =>
-      setProfile(snap.exists() ? snap.data() : null),
+    return onValue(ref(db, `profiles/${user.uid}`), (snap) =>
+      setProfile(snap.exists() ? snap.val() : null),
     );
   }, [user]);
 

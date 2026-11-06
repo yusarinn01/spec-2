@@ -5,7 +5,7 @@ import {
   signOut,
   updateProfile,
 } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { ref, serverTimestamp, set as dbSet } from "firebase/database";
 import { auth, db } from "../firebase/config";
 import { authMessage } from "../utils/authErrors";
 import logo from "../assets/logo.svg";
@@ -18,7 +18,6 @@ const EMPTY = {
   confirm: "",
 };
 
-// Decide which field a Firebase error belongs under
 function fieldForCode(code) {
   switch (code) {
     case "auth/invalid-email":
@@ -34,7 +33,6 @@ function fieldForCode(code) {
   }
 }
 
-// Label + input + error text. Defined OUTSIDE AuthScreen so inputs keep focus.
 function Field({ label, error, children }) {
   return (
     <label className={error ? "field has-error" : "field"}>
@@ -100,7 +98,7 @@ export default function AuthScreen({ registering }) {
           form.password,
         );
         await updateProfile(cred.user, { displayName: form.fullName.trim() });
-        await setDoc(doc(db, "users", cred.user.uid), {
+        await dbSet(ref(db, `profiles/${cred.user.uid}`), {
           fullName: form.fullName.trim(),
           location: form.location.trim(),
           farmSize: "",

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { ref, update } from "firebase/database";
 import { auth, db } from "../firebase/config";
 
 export default function ProfilePage({ user, profile, onSaved, onError }) {
@@ -23,17 +23,13 @@ export default function ProfilePage({ user, profile, onSaved, onError }) {
     if (!form.fullName.trim()) return onError("Enter your full name.");
     setBusy(true);
     try {
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
-          fullName: form.fullName.trim(),
-          location: form.location.trim(),
-          farmSize: form.farmSize.trim(),
-          mainCrop: form.mainCrop.trim(),
-          email: user.email,
-        },
-        { merge: true }
-      );
+      await update(ref(db, `profiles/${user.uid}`), {
+        fullName: form.fullName.trim(),
+        location: form.location.trim(),
+        farmSize: form.farmSize.trim(),
+        mainCrop: form.mainCrop.trim(),
+        email: user.email,
+      });
       await updateProfile(auth.currentUser, { displayName: form.fullName.trim() });
       onSaved("Profile saved.");
     } catch {
