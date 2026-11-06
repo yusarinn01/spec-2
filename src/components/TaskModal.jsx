@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { TASK_TYPES } from "../utils/tasks";
 export default function TaskModal({ modal, onSave, onClose }) {
   const editing = Boolean(modal.task);
+  const NOTES_MAX = 200;
   const [form, setForm] = useState({
     title: modal.task?.title ?? "",
     type: modal.task?.type ?? "watering",
@@ -41,7 +42,14 @@ export default function TaskModal({ modal, onSave, onClose }) {
       >
         <div className="sheet-head">
           <h2>{editing ? "Edit task" : "New task"}</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">×</button>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
 
         <label>
@@ -86,12 +94,23 @@ export default function TaskModal({ modal, onSave, onClose }) {
             rows={3}
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            maxLength={NOTES_MAX}
+            placeholder="e.g. Use 2 liters of water"
           />
+          <span className="char-count">
+            {form.notes.length}/{NOTES_MAX}
+          </span>
         </label>
 
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
 
-        <button className="btn primary">{editing ? "Save changes" : "Add task"}</button>
+        <button className="btn primary">
+          {editing ? "Save changes" : "Add task"}
+        </button>
       </form>
     </div>
   );
